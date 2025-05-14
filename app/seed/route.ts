@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import { invoices, customers, revenue, users } from '../lib/placeholder-data';
-
+import bcrypt from "bcryptjs";
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
 async function seedUsers() {
@@ -14,9 +14,11 @@ async function seedUsers() {
     );
   `;
 
+  const salt = bcrypt.genSaltSync(10);
+
   const insertedUsers = await Promise.all(
     users.map(async (user) => {
-      const hashedPassword = user.password;
+      const hashedPassword = bcrypt.hashSync(user.password, salt);
       return sql`
         INSERT INTO users (id, name, email, password)
         VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword})
@@ -102,12 +104,12 @@ async function seedRevenue() {
 
 export async function GET() {
   try {
-    // const result = await sql.begin((sql) => [
-    //   seedUsers(),
-    //   seedCustomers(),
-    //   seedInvoices(),
-    //   seedRevenue(),
-    // ]);
+    const result = await sql.begin((sql) => [
+      seedUsers(),
+      seedCustomers(),
+      seedInvoices(),
+      seedRevenue(),
+    ]);
 
     return Response.json({ message: 'Database seeded successfully' });
   } catch (error) {
