@@ -6,7 +6,6 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import postgres from 'postgres';
-import { error } from 'console';
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
@@ -62,7 +61,8 @@ export async function createInvoice(prevState: State, formData: FormData) {
       VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
     `;
   } catch (error) {
-    // If a database error occurs, return a more specific error.
+    // Log the error for debugging purposes
+    console.error('Database Error:', error);
     return {
       message: 'Database Error: Failed to Create Invoice.',
     };
@@ -105,6 +105,8 @@ export async function updateInvoice(
       WHERE id = ${id}
     `;
   } catch (error) {
+    // Log the error for debugging purposes
+    console.error('Database Error:', error);
     return { message: 'Database Error: Failed to Update Invoice.' };
   }
  
@@ -125,11 +127,10 @@ export async function authenticate(
     await signIn('credentials', formData);
   } catch (error) {
     if (error instanceof AuthError) {
-      switch (error.type) {
-        case 'CredentialsSignin':
-          return 'Invalid Credentials';
-        default:
-          return 'Something went wrong';
+      if (error.type === 'CredentialsSignin') {
+        return 'Invalid Credentials';
+      } else {
+        return 'Something went wrong';
       }
     }
     throw error;
